@@ -44,9 +44,13 @@ public class TicketServiceImpl implements TicketService {
 				throw new InvalidPurchaseException();
 
 			final var cost = CalculateCost(ticketRequests);
+			if (cost <= 0)
+				throw new InvalidPurchaseException();
 			paymentService.makePayment(accountId, cost);
 
 			final var seats = CalculateNumberOfSeats(ticketRequests);
+			if (seats <= 0)
+				throw new InvalidPurchaseException();
 			seatsService.reserveSeat(accountId, seats);
 		} catch (InvalidPurchaseException e) {
 			throw e;
@@ -60,22 +64,28 @@ public class TicketServiceImpl implements TicketService {
 	}
 
 	private Map<Type, Integer> ConsolidateRequests(TicketTypeRequest[] ticketTypeRequests) {
-		final var ticketRequests = Stream.of(ticketTypeRequests).collect(
-				Collectors.groupingBy(
-						TicketTypeRequest::getTicketType,
-						Collectors.reducing(0, TicketTypeRequest::getNoOfTickets, Integer::sum)));
+		final var ticketRequests = Stream.of(ticketTypeRequests)
+				.takeWhile(
+						(request) -> { 
+							if (request.getNoOfTickets() < 0)
+								throw new InvalidPurchaseException();
+							return true; })
+				.collect(
+					Collectors.groupingBy(
+							TicketTypeRequest::getTicketType,
+							Collectors.reducing(0, TicketTypeRequest::getNoOfTickets, Math::addExact)));
 		return ticketRequests;
+	}
+	
+	private Boolean ValidateTotalTicketQuantity(Map<Type, Integer> ticketRequests) {
+		final var totalTickets = ticketRequests.values().stream().reduce(Integer::sum).orElse(0);
+		return totalTickets > 0 && totalTickets <= MAX_NUMBER_OF_TICKETS;
 	}
 
 	private Boolean ValidateMinorSupervision(Map<Type, Integer> ticketRequests) {
 		final var adultTickets = ticketRequests.getOrDefault(Type.ADULT, 0);
 
 		return adultTickets >= 1;
-	}
-
-	private Boolean ValidateTotalTicketQuantity(Map<Type, Integer> ticketRequests) {
-		final var totalTickets = ticketRequests.values().stream().reduce(Integer::sum).orElse(0);
-		return totalTickets > 0 && totalTickets <= MAX_NUMBER_OF_TICKETS;
 	}
 
 	private boolean ValidateInfantSeats(Map<Type, Integer> ticketRequests) {

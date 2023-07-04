@@ -57,6 +57,21 @@ public class Tests {
 		service.purchaseTickets(99l,
 				new TicketTypeRequest[] { new TicketTypeRequest(Type.ADULT, 1), new TicketTypeRequest(Type.ADULT, 1) });
 	}
+	
+	@Test(expected = InvalidPurchaseException.class)
+	public void givenRequest_whenMaxIntegerQuantity_shouldThrowException() {
+		service.purchaseTickets(99l, new TicketTypeRequest[] { new TicketTypeRequest(Type.ADULT, Integer.MAX_VALUE), new TicketTypeRequest(Type.ADULT, 1) });
+	}
+	
+	@Test(expected = InvalidPurchaseException.class)
+	public void givenRequest_whenNegativeChildQuantity_shouldThrowException() {
+		service.purchaseTickets(99l, new TicketTypeRequest[] { new TicketTypeRequest(Type.INFANT, 1), new TicketTypeRequest(Type.CHILD, -1), new TicketTypeRequest(Type.ADULT, 1) });
+	}
+	
+	@Test(expected = InvalidPurchaseException.class)
+	public void givenRequest_whenNegativeInfantQuantity_shouldThrowException() {
+		service.purchaseTickets(99l, new TicketTypeRequest[] { new TicketTypeRequest(Type.INFANT, -1), new TicketTypeRequest(Type.ADULT, 2) });
+	}
 
 	@Test(expected = InvalidPurchaseException.class)
 	public void givenRequest_whenMoreThan20TicketsRequested_shouldSellTickets() {
@@ -88,7 +103,7 @@ public class Tests {
 	}
 
 	@Test
-	public void givenRequest_whenSingleAdults_shouldRequestCorrectPayment() {
+	public void givenRequest_whenSingleAdult_shouldRequestCorrectPayment() {
 		service.purchaseTickets(99l, new TicketTypeRequest[] { new TicketTypeRequest(Type.ADULT, 1) });
 		verify(payment, times(1)).makePayment(99l, Type.ADULT.Price);
 	}

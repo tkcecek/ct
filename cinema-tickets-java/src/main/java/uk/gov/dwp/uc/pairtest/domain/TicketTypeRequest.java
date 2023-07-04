@@ -23,7 +23,7 @@ public class TicketTypeRequest {
 	}
 
 	public enum Type {
-		ADULT(20), CHILD(10), INFANT(0);
+		ADULT(2000), CHILD(1000), INFANT(0);
 
 		public final int Price;
 
